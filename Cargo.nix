@@ -227,17 +227,12 @@ rec {
           done
         '';
     in
-    crate.overrideAttrs
-      (
-        old: {
-          checkPhase = ''
-            test -e ${test}
-          '';
-          passthru = (old.passthru or { }) // {
-            inherit test;
-          };
-        }
-      );
+    pkgs.runCommand "${crate.name}-linked" {
+      inherit (crate) outputs;
+    }  ''
+      stat ${test} > /dev/null
+      ${lib.concatMapStringsSep "\n" (output: "ln -s ${crate.${output}} ${"$"}${output}") (lib.traceVal crate.outputs)}
+    '';
 
   /* A restricted overridable version of builtRustCratesWithFeatures. */
   buildRustCrateWithFeatures =
